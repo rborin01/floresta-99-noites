@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Floresta das 99 Noites</title>
+<title>Floresta 99 Noites</title>
 <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -17,19 +17,54 @@
 const App = () => {
   const [screen, setScreen] = React.useState('splash');
   const [points, setPoints] = React.useState(0);
+  const [locations, setLocations] = React.useState([]);
+  const [userPos, setUserPos] = React.useState(null);
+  const mapRef = React.useRef(null);
+  const mapInstance = React.useRef(null);
   
-  if (screen === 'splash') {
+  const creatures = [
+    {id:'deer',name:'Cervo',icon:'🦌',points:30,type:'legendary'},
+    {id:'wolf',name:'Lobo',icon:'🐺',points:10,type:'rare'},
+    {id:'rabbit',name:'Coelho',icon:'🐰',points:5,type:'common'}
+  ];
+  
+  const jurere = [
+    {lat:-27.4521,lng:-48.4947,name:'Praia',creature:'deer'},
+    {lat:-27.4535,lng:-48.4962,name:'Shopping',creature:'wolf'},
+    {lat:-27.451,lng:-48.493,name:'Praça',creature:'rabbit'}
+  ];
+  
+  React.useEffect(() => {
+    if(navigator.geolocation) {
+      navigator.geolocation.watchPosition(p => {
+        setUserPos({lat:p.coords.latitude,lng:p.coords.longitude});
+      });
+    }
+  }, []);
+  
+  React.useEffect(() => {
+    if(screen==='map' && mapRef.current && !mapInstance.current) {
+      const pos = userPos || {lat:-27.4521,lng:-48.4947};
+      const map = L.map(mapRef.current).setView([pos.lat,pos.lng], 15);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+      mapInstance.current = map;
+    }
+  }, [screen, userPos]);
+  
+  const startJurere = () => {
+    setLocations(jurere);
+    setScreen('map');
+  };
+  
+  if(screen==='splash') {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-900 via-green-900 to-black flex items-center justify-center p-6">
         <div className="text-center">
           <div className="text-8xl mb-4">🌲</div>
-          <h1 className="text-4xl font-bold text-white mb-2">Floresta das</h1>
+          <h1 className="text-4xl font-bold text-white">Floresta das</h1>
           <h1 className="text-5xl font-bold text-green-400 mb-4">99 Noites</h1>
-          <p className="text-xl text-gray-300">Jurerê</p>
-          <button
-            onClick={() => setScreen('menu')}
-            className="mt-8 bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg text-xl font-bold"
-          >
+          <p className="text-xl text-gray-300 mb-8">Jurerê</p>
+          <button onClick={()=>setScreen('menu')} className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg text-xl font-bold">
             INICIAR AVENTURA
           </button>
         </div>
@@ -37,26 +72,17 @@ const App = () => {
     );
   }
   
-  if (screen === 'menu') {
+  if(screen==='menu') {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white p-6">
         <div className="max-w-md mx-auto">
-          <h1 className="text-3xl font-bold text-center mb-8 text-green-400">Menu Principal</h1>
+          <h1 className="text-3xl font-bold text-center mb-8 text-green-400">Menu</h1>
           <div className="bg-gray-800 rounded-lg p-4 mb-6">
             <p className="text-gray-400">Pontos: {points}/100</p>
           </div>
           <div className="space-y-4">
-            <button
-              onClick={() => setScreen('mode')}
-              className="w-full bg-green-600 hover:bg-green-700 p-4 rounded-lg text-xl font-bold"
-            >
+            <button onClick={()=>setScreen('mode')} className="w-full bg-green-600 hover:bg-green-700 p-4 rounded-lg text-xl font-bold">
               JOGAR
-            </button>
-            <button
-              onClick={() => setScreen('splash')}
-              className="w-full bg-gray-700 hover:bg-gray-600 p-4 rounded-lg font-bold"
-            >
-              Voltar
             </button>
           </div>
         </div>
@@ -64,26 +90,16 @@ const App = () => {
     );
   }
   
-  if (screen === 'mode') {
+  if(screen==='mode') {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white p-6">
         <div className="max-w-md mx-auto">
-          <button onClick={() => setScreen('menu')} className="mb-6 text-gray-400">← Voltar</button>
+          <button onClick={()=>setScreen('menu')} className="mb-6 text-gray-400">← Voltar</button>
           <h1 className="text-3xl font-bold text-center mb-8 text-green-400">Escolha o Modo</h1>
           <div className="space-y-4">
-            <button
-              onClick={() => alert('Modo Local - Em desenvolvimento')}
-              className="w-full bg-blue-600 hover:bg-blue-700 p-6 rounded-lg text-left"
-            >
-              <h3 className="text-xl font-bold">🎯 Modo Local</h3>
-              <p className="text-sm text-gray-300">15 pontos perto de você</p>
-            </button>
-            <button
-              onClick={() => alert('Modo Jurerê - Em desenvolvimento')}
-              className="w-full bg-purple-600 hover:bg-purple-700 p-6 rounded-lg text-left"
-            >
+            <button onClick={startJurere} className="w-full bg-purple-600 hover:bg-purple-700 p-6 rounded-lg text-left">
               <h3 className="text-xl font-bold">🌆 Modo Jurerê</h3>
-              <p className="text-sm text-gray-300">19 pontos turísticos</p>
+              <p className="text-sm text-gray-300">3 pontos para teste</p>
             </button>
           </div>
         </div>
@@ -91,10 +107,34 @@ const App = () => {
     );
   }
   
-  return <div className="min-h-screen bg-black text-white flex items-center justify-center">Carregando...</div>;
+  if(screen==='map') {
+    return (
+      <div className="min-h-screen bg-gray-900 text-white">
+        <div className="p-4 bg-gray-800 flex justify-between items-center">
+          <button onClick={()=>setScreen('menu')} className="text-gray-400">← Menu</button>
+          <p className="font-bold">Pontos: {points}</p>
+        </div>
+        <div ref={mapRef} style={{height:'400px',width:'100%'}}></div>
+        <div className="p-4">
+          <h3 className="font-bold mb-4">Locais:</h3>
+          {locations.map((loc,i) => {
+            const c = creatures.find(x=>x.id===loc.creature);
+            return (
+              <div key={i} className="bg-gray-800 p-4 rounded mb-2">
+                <p className="font-bold">{c.icon} {loc.name}</p>
+                <p className="text-sm text-gray-400">{c.name} - {c.points} pts</p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+  
+  return <div>Carregando...</div>;
 };
 
-ReactDOM.render(<App />, document.getElementById('root'));
+ReactDOM.render(<App/>, document.getElementById('root'));
 </script>
 </body>
 </html>
