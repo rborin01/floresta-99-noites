@@ -1,746 +1,756 @@
-import React, { useState, useEffect } from 'react';
-import { MapPin, Trophy, Backpack, Target, Plus, Play, Settings, Award, Heart, Sword, Shield, ChevronRight } from 'lucide-react';
-
-const App = () => {
-  const [screen, setScreen] = useState('splash');
-  const [points, setPoints] = useState(0);
-  const [playerHealth, setPlayerHealth] = useState(100);
-  const [inventory, setInventory] = useState([]);
-  const [discoveredLocations, setDiscoveredLocations] = useState([]);
-  const [currentLocation, setCurrentLocation] = useState(null);
-  const [userPosition, setUserPosition] = useState(null);
-  const [gameMode, setGameMode] = useState(null);
-  const [locations, setLocations] = useState([]);
-  const [inBattle, setInBattle] = useState(false);
-  const [enemy, setEnemy] = useState(null);
-  const [missions, setMissions] = useState([
-    { id: 1, name: 'Encontre 3 Cultistas', progress: 0, target: 3, reward: 15, completed: false },
-    { id: 2, name: 'Colete 5 Itens', progress: 0, target: 5, reward: 10, completed: false },
-    { id: 3, name: 'Derrote o Alpha Wolf', progress: 0, target: 1, reward: 30, completed: false }
-  ]);
-
-  // Criaturas e itens do 99 Noites
-  const creatures = [
-    // LENDÁRIOS (30 pts)
-    { id: 'deer', name: 'O Cervo (Wendigo)', type: 'legendary', points: 30, rarity: 'Lendário', isEnemy: true, health: 100, damage: 25, icon: '🦌' },
-    { id: 'owl', name: 'A Coruja', type: 'legendary', points: 30, rarity: 'Lendário', isEnemy: true, health: 80, damage: 20, icon: '🦉' },
-    { id: 'ram', name: 'O Carneiro', type: 'legendary', points: 30, rarity: 'Lendário', isEnemy: true, health: 90, damage: 22, icon: '🐏' },
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Floresta das 99 Noites - Jurerê</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="root"></div>
     
-    // ÉPICOS (20 pts)
-    { id: 'alpha_wolf', name: 'Alpha Wolf', type: 'epic', points: 20, rarity: 'Épico', isEnemy: true, health: 60, damage: 18, icon: '🐺' },
-    { id: 'cultist_king', name: 'Cultist King', type: 'epic', points: 20, rarity: 'Épico', isEnemy: true, health: 70, damage: 20, icon: '👑' },
-    { id: 'bear', name: 'Urso', type: 'epic', points: 20, rarity: 'Épico', isEnemy: true, health: 80, damage: 25, icon: '🐻' },
-    { id: 'flashlight', name: 'Lanterna', type: 'epic', points: 20, rarity: 'Épico', isEnemy: false, icon: '🔦' },
-    { id: 'katana', name: 'Katana', type: 'epic', points: 20, rarity: 'Épico', isEnemy: false, icon: '⚔️' },
-    
-    // RAROS (10 pts)
-    { id: 'wolf', name: 'Lobo', type: 'rare', points: 10, rarity: 'Raro', isEnemy: true, health: 40, damage: 12, icon: '🐺' },
-    { id: 'cultist', name: 'Cultista', type: 'rare', points: 10, rarity: 'Raro', isEnemy: true, health: 30, damage: 10, icon: '🧙' },
-    { id: 'crossbow_cultist', name: 'Cultista Arqueiro', type: 'rare', points: 10, rarity: 'Raro', isEnemy: true, health: 25, damage: 15, icon: '🏹' },
-    { id: 'fox', name: 'Raposa Ártica', type: 'rare', points: 10, rarity: 'Raro', isEnemy: false, icon: '🦊' },
-    { id: 'torch', name: 'Tocha', type: 'rare', points: 10, rarity: 'Raro', isEnemy: false, icon: '🔥' },
-    { id: 'armor', name: 'Armadura', type: 'rare', points: 10, rarity: 'Raro', isEnemy: false, icon: '🛡️' },
-    
-    // COMUNS (5 pts)
-    { id: 'rabbit', name: 'Coelho', type: 'common', points: 5, rarity: 'Comum', isEnemy: false, icon: '🐰' },
-    { id: 'wood', name: 'Madeira', type: 'common', points: 5, rarity: 'Comum', isEnemy: false, icon: '🪵' },
-    { id: 'mushroom', name: 'Cogumelo', type: 'common', points: 5, rarity: 'Comum', isEnemy: false, icon: '🍄' },
-    { id: 'crystal', name: 'Cristal', type: 'common', points: 5, rarity: 'Comum', isEnemy: false, icon: '💎' },
-    { id: 'branch', name: 'Galho Mágico', type: 'common', points: 5, rarity: 'Comum', isEnemy: false, icon: '🌿' }
-  ];
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        const { MapPin, Trophy, Backpack, Target, Plus, Play, Settings, Award, Heart, Sword, Shield, ChevronRight } = (() => {
+            const createIcon = (d) => ({ className = "", size = 24 }) => 
+                React.createElement('svg', { 
+                    width: size, 
+                    height: size, 
+                    fill: 'none', 
+                    stroke: 'currentColor', 
+                    strokeWidth: 2, 
+                    strokeLinecap: 'round', 
+                    strokeLinejoin: 'round',
+                    className 
+                }, React.createElement('path', { d }));
+            
+            return {
+                MapPin: createIcon('M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z M12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6z'),
+                Trophy: createIcon('M6 9H4.5a2.5 2.5 0 0 1 0-5H6 M18 9h1.5a2.5 2.5 0 0 0 0-5H18 M4 22h16 M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22 M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22 M18 2H6v7a6 6 0 0 0 12 0V2z'),
+                Backpack: createIcon('M17 5H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z M8 2v3 M16 2v3 M8 12h8 M8 16h8'),
+                Target: createIcon('M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12z M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z'),
+                Plus: createIcon('M12 5v14 M5 12h14'),
+                Play: createIcon('M5 3l14 9-14 9V3z'),
+                Settings: createIcon('M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z'),
+                Award: createIcon('M12 15a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M8.21 13.89L7 23l5-3 5 3-1.21-9.12'),
+                Heart: createIcon('M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z'),
+                Sword: createIcon('M14.5 17.5L3 6V3h3l11.5 11.5 M13 19l6-6 M16 16l5 5 M19 21l2-2'),
+                Shield: createIcon('M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'),
+                ChevronRight: createIcon('M9 18l6-6-6-6')
+            };
+        })();
 
-  // Pontos de interesse em Jurerê (coordenadas reais aproximadas)
-  const jurereLocations = [
-    { lat: -27.4521, lng: -48.4947, name: 'Praia de Jurerê Internacional', creature: 'deer' },
-    { lat: -27.4535, lng: -48.4962, name: 'Jurerê Open Shopping', creature: 'cultist_king' },
-    { lat: -27.4510, lng: -48.4930, name: 'Praça da Praia', creature: 'alpha_wolf' },
-    { lat: -27.4528, lng: -48.4955, name: 'Avenida dos Búzios', creature: 'owl' },
-    { lat: -27.4515, lng: -48.4940, name: 'Calçadão', creature: 'wolf' },
-    { lat: -27.4540, lng: -48.4970, name: 'Parque Jurerê', creature: 'bear' },
-    { lat: -27.4505, lng: -48.4925, name: 'Píer de Jurerê', creature: 'cultist' },
-    { lat: -27.4525, lng: -48.4950, name: 'Mirante da Praia', creature: 'flashlight' },
-    { lat: -27.4518, lng: -48.4945, name: 'Quiosque Central', creature: 'torch' },
-    { lat: -27.4512, lng: -48.4935, name: 'Bosque', creature: 'rabbit' }
-  ];
+        const App = () => {
+            const [screen, setScreen] = useState('splash');
+            const [points, setPoints] = useState(0);
+            const [playerHealth, setPlayerHealth] = useState(100);
+            const [inventory, setInventory] = useState([]);
+            const [discoveredLocations, setDiscoveredLocations] = useState([]);
+            const [currentLocation, setCurrentLocation] = useState(null);
+            const [userPosition, setUserPosition] = useState(null);
+            const [gameMode, setGameMode] = useState(null);
+            const [locations, setLocations] = useState([]);
+            const [inBattle, setInBattle] = useState(false);
+            const [enemy, setEnemy] = useState(null);
+            const [missions, setMissions] = useState([
+                { id: 1, name: 'Encontre 3 Cultistas', progress: 0, target: 3, reward: 15, completed: false },
+                { id: 2, name: 'Colete 5 Itens', progress: 0, target: 5, reward: 10, completed: false },
+                { id: 3, name: 'Derrote o Alpha Wolf', progress: 0, target: 1, reward: 30, completed: false }
+            ]);
 
-  // Inicializar GPS
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.watchPosition(
-        (position) => {
-          setUserPosition({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          });
-        },
-        (error) => console.log('GPS Error:', error),
-        { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
-      );
-    }
-  }, []);
+            const creatures = [
+                { id: 'deer', name: 'O Cervo (Wendigo)', type: 'legendary', points: 30, rarity: 'Lendário', isEnemy: true, health: 100, damage: 25, icon: '🦌' },
+                { id: 'owl', name: 'A Coruja', type: 'legendary', points: 30, rarity: 'Lendário', isEnemy: true, health: 80, damage: 20, icon: '🦉' },
+                { id: 'ram', name: 'O Carneiro', type: 'legendary', points: 30, rarity: 'Lendário', isEnemy: true, health: 90, damage: 22, icon: '🐏' },
+                { id: 'alpha_wolf', name: 'Alpha Wolf', type: 'epic', points: 20, rarity: 'Épico', isEnemy: true, health: 60, damage: 18, icon: '🐺' },
+                { id: 'cultist_king', name: 'Cultist King', type: 'epic', points: 20, rarity: 'Épico', isEnemy: true, health: 70, damage: 20, icon: '👑' },
+                { id: 'bear', name: 'Urso', type: 'epic', points: 20, rarity: 'Épico', isEnemy: true, health: 80, damage: 25, icon: '🐻' },
+                { id: 'flashlight', name: 'Lanterna', type: 'epic', points: 20, rarity: 'Épico', isEnemy: false, icon: '🔦' },
+                { id: 'katana', name: 'Katana', type: 'epic', points: 20, rarity: 'Épico', isEnemy: false, icon: '⚔️' },
+                { id: 'wolf', name: 'Lobo', type: 'rare', points: 10, rarity: 'Raro', isEnemy: true, health: 40, damage: 12, icon: '🐺' },
+                { id: 'cultist', name: 'Cultista', type: 'rare', points: 10, rarity: 'Raro', isEnemy: true, health: 30, damage: 10, icon: '🧙' },
+                { id: 'crossbow_cultist', name: 'Cultista Arqueiro', type: 'rare', points: 10, rarity: 'Raro', isEnemy: true, health: 25, damage: 15, icon: '🏹' },
+                { id: 'fox', name: 'Raposa Ártica', type: 'rare', points: 10, rarity: 'Raro', isEnemy: false, icon: '🦊' },
+                { id: 'torch', name: 'Tocha', type: 'rare', points: 10, rarity: 'Raro', isEnemy: false, icon: '🔥' },
+                { id: 'armor', name: 'Armadura', type: 'rare', points: 10, rarity: 'Raro', isEnemy: false, icon: '🛡️' },
+                { id: 'rabbit', name: 'Coelho', type: 'common', points: 5, rarity: 'Comum', isEnemy: false, icon: '🐰' },
+                { id: 'wood', name: 'Madeira', type: 'common', points: 5, rarity: 'Comum', isEnemy: false, icon: '🪵' },
+                { id: 'mushroom', name: 'Cogumelo', type: 'common', points: 5, rarity: 'Comum', isEnemy: false, icon: '🍄' },
+                { id: 'crystal', name: 'Cristal', type: 'common', points: 5, rarity: 'Comum', isEnemy: false, icon: '💎' },
+                { id: 'branch', name: 'Galho Mágico', type: 'common', points: 5, rarity: 'Comum', isEnemy: false, icon: '🌿' }
+            ];
 
-  // Calcular distância entre dois pontos (em metros)
-  const calculateDistance = (lat1, lng1, lat2, lng2) => {
-    const R = 6371e3; // Raio da Terra em metros
-    const φ1 = lat1 * Math.PI / 180;
-    const φ2 = lat2 * Math.PI / 180;
-    const Δφ = (lat2 - lat1) * Math.PI / 180;
-    const Δλ = (lng2 - lng1) * Math.PI / 180;
+            const jurereLocations = [
+                { lat: -27.4521, lng: -48.4947, name: 'Praia de Jurerê Internacional', creature: 'deer' },
+                { lat: -27.4535, lng: -48.4962, name: 'Jurerê Open Shopping', creature: 'cultist_king' },
+                { lat: -27.4510, lng: -48.4930, name: 'Praça da Praia', creature: 'alpha_wolf' },
+                { lat: -27.4528, lng: -48.4955, name: 'Avenida dos Búzios', creature: 'owl' },
+                { lat: -27.4515, lng: -48.4940, name: 'Calçadão', creature: 'wolf' },
+                { lat: -27.4540, lng: -48.4970, name: 'Parque Jurerê', creature: 'bear' },
+                { lat: -27.4505, lng: -48.4925, name: 'Píer de Jurerê', creature: 'cultist' },
+                { lat: -27.4525, lng: -48.4950, name: 'Mirante da Praia', creature: 'flashlight' },
+                { lat: -27.4518, lng: -48.4945, name: 'Quiosque Central', creature: 'torch' },
+                { lat: -27.4512, lng: -48.4935, name: 'Bosque', creature: 'rabbit' }
+            ];
 
-    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-              Math.cos(φ1) * Math.cos(φ2) *
-              Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            useEffect(() => {
+                if (navigator.geolocation) {
+                    navigator.geolocation.watchPosition(
+                        (position) => {
+                            setUserPosition({
+                                lat: position.coords.latitude,
+                                lng: position.coords.longitude
+                            });
+                        },
+                        (error) => console.log('GPS Error:', error),
+                        { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
+                    );
+                }
+            }, []);
 
-    return R * c;
-  };
+            const calculateDistance = (lat1, lng1, lat2, lng2) => {
+                const R = 6371e3;
+                const φ1 = lat1 * Math.PI / 180;
+                const φ2 = lat2 * Math.PI / 180;
+                const Δφ = (lat2 - lat1) * Math.PI / 180;
+                const Δλ = (lng2 - lng1) * Math.PI / 180;
 
-  // Verificar locais próximos
-  useEffect(() => {
-    if (userPosition && locations.length > 0) {
-      locations.forEach(loc => {
-        if (!discoveredLocations.includes(loc.id)) {
-          const distance = calculateDistance(
-            userPosition.lat, userPosition.lng,
-            loc.lat, loc.lng
-          );
-          
-          if (distance <= 15) { // 15 metros
-            handleDiscoverLocation(loc);
-          }
-        }
-      });
-    }
-  }, [userPosition, locations]);
+                const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                          Math.cos(φ1) * Math.cos(φ2) *
+                          Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-  // Descobrir local
-  const handleDiscoverLocation = (location) => {
-    const creature = creatures.find(c => c.id === location.creature);
-    setCurrentLocation({ ...location, creature });
-    setDiscoveredLocations([...discoveredLocations, location.id]);
-    
-    if (creature.isEnemy) {
-      setEnemy({ ...creature, currentHealth: creature.health });
-      setInBattle(true);
-      setScreen('battle');
-    } else {
-      setScreen('discovery');
-    }
-  };
+                return R * c;
+            };
 
-  // Coletar item
-  const collectItem = () => {
-    const creature = currentLocation.creature;
-    setPoints(points + creature.points);
-    setInventory([...inventory, creature]);
-    
-    // Atualizar missões
-    updateMissions(creature);
-    
-    setScreen('map');
-    setCurrentLocation(null);
-  };
+            useEffect(() => {
+                if (userPosition && locations.length > 0) {
+                    locations.forEach(loc => {
+                        if (!discoveredLocations.includes(loc.id)) {
+                            const distance = calculateDistance(
+                                userPosition.lat, userPosition.lng,
+                                loc.lat, loc.lng
+                            );
+                            
+                            if (distance <= 15) {
+                                handleDiscoverLocation(loc);
+                            }
+                        }
+                    });
+                }
+            }, [userPosition, locations]);
 
-  // Atualizar missões
-  const updateMissions = (creature) => {
-    const newMissions = missions.map(mission => {
-      if (mission.id === 1 && creature.id.includes('cultist') && !mission.completed) {
-        const newProgress = mission.progress + 1;
-        if (newProgress >= mission.target) {
-          setPoints(p => p + mission.reward);
-          return { ...mission, progress: newProgress, completed: true };
-        }
-        return { ...mission, progress: newProgress };
-      }
-      if (mission.id === 2 && !mission.completed) {
-        const newProgress = mission.progress + 1;
-        if (newProgress >= mission.target) {
-          setPoints(p => p + mission.reward);
-          return { ...mission, progress: newProgress, completed: true };
-        }
-        return { ...mission, progress: newProgress };
-      }
-      return mission;
-    });
-    setMissions(newMissions);
-  };
-
-  // Sistema de batalha
-  const attack = () => {
-    const playerDamage = 20;
-    const newEnemyHealth = enemy.currentHealth - playerDamage;
-    
-    if (newEnemyHealth <= 0) {
-      // Vitória
-      setPoints(points + enemy.points);
-      setInventory([...inventory, enemy]);
-      
-      // Atualizar missão de Alpha Wolf
-      if (enemy.id === 'alpha_wolf') {
-        const newMissions = missions.map(m => 
-          m.id === 3 ? { ...m, progress: 1, completed: true } : m
-        );
-        setMissions(newMissions);
-        setPoints(p => p + 30);
-      }
-      
-      updateMissions(enemy);
-      setInBattle(false);
-      setEnemy(null);
-      setScreen('map');
-    } else {
-      setEnemy({ ...enemy, currentHealth: newEnemyHealth });
-      
-      // Inimigo ataca de volta
-      setTimeout(() => {
-        const newPlayerHealth = playerHealth - enemy.damage;
-        if (newPlayerHealth <= 0) {
-          setPlayerHealth(0);
-          alert('Você foi derrotado! Retornando ao acampamento...');
-          setInBattle(false);
-          setEnemy(null);
-          setPlayerHealth(100);
-          setScreen('map');
-        } else {
-          setPlayerHealth(newPlayerHealth);
-        }
-      }, 500);
-    }
-  };
-
-  const flee = () => {
-    setInBattle(false);
-    setEnemy(null);
-    setScreen('map');
-  };
-
-  // Gerar pontos aleatórios no modo local
-  const generateLocalPoints = () => {
-    if (!userPosition) {
-      alert('Aguardando localização GPS...');
-      return;
-    }
-    
-    const newLocations = [];
-    for (let i = 0; i < 10; i++) {
-      const randomCreature = creatures[Math.floor(Math.random() * creatures.length)];
-      const angle = Math.random() * 2 * Math.PI;
-      const distance = 50 + Math.random() * 400; // 50-450 metros
-      
-      const lat = userPosition.lat + (distance / 111000) * Math.cos(angle);
-      const lng = userPosition.lng + (distance / (111000 * Math.cos(userPosition.lat * Math.PI / 180))) * Math.sin(angle);
-      
-      newLocations.push({
-        id: `local_${i}`,
-        lat,
-        lng,
-        name: `Ponto ${i + 1}`,
-        creature: randomCreature.id
-      });
-    }
-    
-    setLocations(newLocations);
-    setGameMode('local');
-    setScreen('map');
-  };
-
-  // Modo Jurerê
-  const startJurereMode = () => {
-    const locationsWithId = jurereLocations.map((loc, i) => ({ ...loc, id: `jurere_${i}` }));
-    setLocations(locationsWithId);
-    setGameMode('jurere');
-    setScreen('map');
-  };
-
-  // Calcular ranking
-  const getRank = () => {
-    if (points >= 76) return { name: 'Diamante', icon: '💎', color: 'text-cyan-400' };
-    if (points >= 51) return { name: 'Ouro', icon: '🥇', color: 'text-yellow-400' };
-    if (points >= 26) return { name: 'Prata', icon: '🥈', color: 'text-gray-300' };
-    return { name: 'Bronze', icon: '🥉', color: 'text-orange-400' };
-  };
-
-  const rank = getRank();
-
-  // TELAS
-
-  // Splash Screen
-  if (screen === 'splash') {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 via-green-900 to-black flex flex-col items-center justify-center p-6">
-        <div className="text-center space-y-6 animate-fade-in">
-          <div className="text-8xl mb-4">🌲</div>
-          <h1 className="text-4xl font-bold text-white mb-2">Floresta das</h1>
-          <h1 className="text-5xl font-bold text-green-400 mb-4">99 Noites</h1>
-          <p className="text-xl text-gray-300">Jurerê</p>
-          <button
-            onClick={() => setScreen('menu')}
-            className="mt-8 bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg text-xl font-bold transition-all transform hover:scale-105"
-          >
-            INICIAR AVENTURA
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Menu Principal
-  if (screen === 'menu') {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white p-6">
-        <div className="max-w-md mx-auto">
-          <h1 className="text-3xl font-bold text-center mb-8 text-green-400">Menu Principal</h1>
-          
-          <div className="bg-gray-800 rounded-lg p-4 mb-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400">Pontos</p>
-                <p className="text-3xl font-bold">{points}/100</p>
-              </div>
-              <div className="text-right">
-                <p className="text-gray-400">Ranking</p>
-                <p className={`text-2xl font-bold ${rank.color}`}>{rank.icon} {rank.name}</p>
-              </div>
-            </div>
-            <div className="w-full bg-gray-700 rounded-full h-3 mt-4">
-              <div 
-                className="bg-green-500 h-3 rounded-full transition-all"
-                style={{ width: `${points}%` }}
-              />
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <button
-              onClick={() => setScreen('mode')}
-              className="w-full bg-green-600 hover:bg-green-700 p-4 rounded-lg flex items-center justify-between transition-all"
-            >
-              <div className="flex items-center gap-3">
-                <Play className="w-6 h-6" />
-                <span className="text-xl font-bold">JOGAR</span>
-              </div>
-              <ChevronRight className="w-6 h-6" />
-            </button>
-
-            <button
-              onClick={() => setScreen('inventory')}
-              className="w-full bg-gray-700 hover:bg-gray-600 p-4 rounded-lg flex items-center justify-between transition-all"
-            >
-              <div className="flex items-center gap-3">
-                <Backpack className="w-6 h-6" />
-                <span className="text-xl font-bold">Inventário</span>
-              </div>
-              <span className="text-gray-400">{inventory.length} itens</span>
-            </button>
-
-            <button
-              onClick={() => setScreen('missions')}
-              className="w-full bg-gray-700 hover:bg-gray-600 p-4 rounded-lg flex items-center justify-between transition-all"
-            >
-              <div className="flex items-center gap-3">
-                <Target className="w-6 h-6" />
-                <span className="text-xl font-bold">Missões</span>
-              </div>
-              <span className="text-gray-400">{missions.filter(m => m.completed).length}/{missions.length}</span>
-            </button>
-          </div>
-
-          {points >= 100 && (
-            <div className="mt-8 bg-gradient-to-r from-purple-600 to-pink-600 p-6 rounded-lg text-center animate-pulse">
-              <Award className="w-16 h-16 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold mb-2">PARABÉNS!</h2>
-              <p className="text-lg">Você completou as 99 Noites!</p>
-              <p className="text-sm mt-2">🏆 Mestre da Floresta 🏆</p>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // Escolher Modo
-  if (screen === 'mode') {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white p-6">
-        <div className="max-w-md mx-auto">
-          <button onClick={() => setScreen('menu')} className="mb-6 text-gray-400 hover:text-white">
-            ← Voltar
-          </button>
-          
-          <h1 className="text-3xl font-bold text-center mb-8 text-green-400">Escolha o Modo</h1>
-
-          <div className="space-y-4">
-            <button
-              onClick={generateLocalPoints}
-              className="w-full bg-blue-600 hover:bg-blue-700 p-6 rounded-lg text-left transition-all"
-            >
-              <div className="flex items-center gap-4 mb-2">
-                <MapPin className="w-8 h-8" />
-                <div>
-                  <h3 className="text-xl font-bold">🎯 Modo Local</h3>
-                  <p className="text-sm text-gray-300">Gera 10 pontos perto de você</p>
-                </div>
-              </div>
-              <p className="text-xs text-gray-400 mt-2">Perfeito para jogar em uma praça ou praia</p>
-            </button>
-
-            <button
-              onClick={startJurereMode}
-              className="w-full bg-purple-600 hover:bg-purple-700 p-6 rounded-lg text-left transition-all"
-            >
-              <div className="flex items-center gap-4 mb-2">
-                <Trophy className="w-8 h-8" />
-                <div>
-                  <h3 className="text-xl font-bold">🌆 Modo Jurerê</h3>
-                  <p className="text-sm text-gray-300">Aventura completa pela região</p>
-                </div>
-              </div>
-              <p className="text-xs text-gray-400 mt-2">10+ pontos fixos em Jurerê Internacional</p>
-            </button>
-
-            <button
-              onClick={() => alert('Modo Criador em breve!')}
-              className="w-full bg-gray-700 hover:bg-gray-600 p-6 rounded-lg text-left transition-all"
-            >
-              <div className="flex items-center gap-4 mb-2">
-                <Plus className="w-8 h-8" />
-                <div>
-                  <h3 className="text-xl font-bold">✏️ Modo Criador</h3>
-                  <p className="text-sm text-gray-300">Adicione seus próprios pontos</p>
-                </div>
-              </div>
-              <p className="text-xs text-gray-400 mt-2">Em desenvolvimento</p>
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Mapa
-  if (screen === 'map') {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white p-4">
-        <div className="max-w-md mx-auto">
-          <div className="flex items-center justify-between mb-4">
-            <button onClick={() => setScreen('menu')} className="text-gray-400 hover:text-white">
-              ← Menu
-            </button>
-            <div className="text-right">
-              <p className="text-sm text-gray-400">Pontos</p>
-              <p className="text-2xl font-bold text-green-400">{points}/100</p>
-            </div>
-          </div>
-
-          <div className="bg-gray-800 rounded-lg p-4 mb-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <Heart className="w-5 h-5 text-red-500" />
-                <span>Vida: {playerHealth}/100</span>
-              </div>
-              <div className={`${rank.color} font-bold`}>
-                {rank.icon} {rank.name}
-              </div>
-            </div>
-            <div className="w-full bg-gray-700 rounded-full h-2">
-              <div 
-                className="bg-green-500 h-2 rounded-full transition-all"
-                style={{ width: `${points}%` }}
-              />
-            </div>
-          </div>
-
-          <div className="bg-gray-800 rounded-lg p-4 mb-4">
-            <h3 className="font-bold mb-2 flex items-center gap-2">
-              <MapPin className="w-5 h-5" />
-              Locais Próximos
-            </h3>
-            {!userPosition && (
-              <p className="text-yellow-400 text-sm">📍 Aguardando GPS...</p>
-            )}
-            {userPosition && locations.length === 0 && (
-              <p className="text-gray-400 text-sm">Nenhum local gerado ainda</p>
-            )}
-            <div className="space-y-2 mt-3 max-h-96 overflow-y-auto">
-              {locations.map(loc => {
-                const distance = userPosition ? calculateDistance(
-                  userPosition.lat, userPosition.lng,
-                  loc.lat, loc.lng
-                ) : null;
-                const creature = creatures.find(c => c.id === loc.creature);
-                const discovered = discoveredLocations.includes(loc.id);
+            const handleDiscoverLocation = (location) => {
+                const creature = creatures.find(c => c.id === location.creature);
+                setCurrentLocation({ ...location, creature });
+                setDiscoveredLocations([...discoveredLocations, location.id]);
                 
+                if (creature.isEnemy) {
+                    setEnemy({ ...creature, currentHealth: creature.health });
+                    setInBattle(true);
+                    setScreen('battle');
+                } else {
+                    setScreen('discovery');
+                }
+            };
+
+            const collectItem = () => {
+                const creature = currentLocation.creature;
+                setPoints(points + creature.points);
+                setInventory([...inventory, creature]);
+                updateMissions(creature);
+                setScreen('map');
+                setCurrentLocation(null);
+            };
+
+            const updateMissions = (creature) => {
+                const newMissions = missions.map(mission => {
+                    if (mission.id === 1 && creature.id.includes('cultist') && !mission.completed) {
+                        const newProgress = mission.progress + 1;
+                        if (newProgress >= mission.target) {
+                            setPoints(p => p + mission.reward);
+                            return { ...mission, progress: newProgress, completed: true };
+                        }
+                        return { ...mission, progress: newProgress };
+                    }
+                    if (mission.id === 2 && !mission.completed) {
+                        const newProgress = mission.progress + 1;
+                        if (newProgress >= mission.target) {
+                            setPoints(p => p + mission.reward);
+                            return { ...mission, progress: newProgress, completed: true };
+                        }
+                        return { ...mission, progress: newProgress };
+                    }
+                    return mission;
+                });
+                setMissions(newMissions);
+            };
+
+            const attack = () => {
+                const playerDamage = 20;
+                const newEnemyHealth = enemy.currentHealth - playerDamage;
+                
+                if (newEnemyHealth <= 0) {
+                    setPoints(points + enemy.points);
+                    setInventory([...inventory, enemy]);
+                    
+                    if (enemy.id === 'alpha_wolf') {
+                        const newMissions = missions.map(m => 
+                            m.id === 3 ? { ...m, progress: 1, completed: true } : m
+                        );
+                        setMissions(newMissions);
+                        setPoints(p => p + 30);
+                    }
+                    
+                    updateMissions(enemy);
+                    setInBattle(false);
+                    setEnemy(null);
+                    setScreen('map');
+                } else {
+                    setEnemy({ ...enemy, currentHealth: newEnemyHealth });
+                    
+                    setTimeout(() => {
+                        const newPlayerHealth = playerHealth - enemy.damage;
+                        if (newPlayerHealth <= 0) {
+                            setPlayerHealth(0);
+                            alert('Você foi derrotado! Retornando ao acampamento...');
+                            setInBattle(false);
+                            setEnemy(null);
+                            setPlayerHealth(100);
+                            setScreen('map');
+                        } else {
+                            setPlayerHealth(newPlayerHealth);
+                        }
+                    }, 500);
+                }
+            };
+
+            const flee = () => {
+                setInBattle(false);
+                setEnemy(null);
+                setScreen('map');
+            };
+
+            const generateLocalPoints = () => {
+                if (!userPosition) {
+                    alert('Aguardando localização GPS...');
+                    return;
+                }
+                
+                const newLocations = [];
+                for (let i = 0; i < 10; i++) {
+                    const randomCreature = creatures[Math.floor(Math.random() * creatures.length)];
+                    const angle = Math.random() * 2 * Math.PI;
+                    const distance = 50 + Math.random() * 400;
+                    
+                    const lat = userPosition.lat + (distance / 111000) * Math.cos(angle);
+                    const lng = userPosition.lng + (distance / (111000 * Math.cos(userPosition.lat * Math.PI / 180))) * Math.sin(angle);
+                    
+                    newLocations.push({
+                        id: `local_${i}`,
+                        lat,
+                        lng,
+                        name: `Ponto ${i + 1}`,
+                        creature: randomCreature.id
+                    });
+                }
+                
+                setLocations(newLocations);
+                setGameMode('local');
+                setScreen('map');
+            };
+
+            const startJurereMode = () => {
+                const locationsWithId = jurereLocations.map((loc, i) => ({ ...loc, id: `jurere_${i}` }));
+                setLocations(locationsWithId);
+                setGameMode('jurere');
+                setScreen('map');
+            };
+
+            const getRank = () => {
+                if (points >= 76) return { name: 'Diamante', icon: '💎', color: 'text-cyan-400' };
+                if (points >= 51) return { name: 'Ouro', icon: '🥇', color: 'text-yellow-400' };
+                if (points >= 26) return { name: 'Prata', icon: '🥈', color: 'text-gray-300' };
+                return { name: 'Bronze', icon: '🥉', color: 'text-orange-400' };
+            };
+
+            const rank = getRank();
+
+            if (screen === 'splash') {
                 return (
-                  <div 
-                    key={loc.id}
-                    className={`p-3 rounded-lg ${discovered ? 'bg-green-900' : distance && distance <= 15 ? 'bg-yellow-900 animate-pulse' : 'bg-gray-700'}`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className="text-3xl">{creature.icon}</span>
-                        <div>
-                          <p className="font-bold">{loc.name}</p>
-                          <p className="text-xs text-gray-400">{creature.name}</p>
-                          <p className={`text-xs ${
-                            creature.type === 'legendary' ? 'text-purple-400' :
-                            creature.type === 'epic' ? 'text-yellow-400' :
-                            creature.type === 'rare' ? 'text-blue-400' :
-                            'text-gray-400'
-                          }`}>
-                            {creature.rarity} • {creature.points} pts
-                          </p>
+                    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-green-900 to-black flex flex-col items-center justify-center p-6">
+                        <div className="text-center space-y-6">
+                            <div className="text-8xl mb-4">🌲</div>
+                            <h1 className="text-4xl font-bold text-white mb-2">Floresta das</h1>
+                            <h1 className="text-5xl font-bold text-green-400 mb-4">99 Noites</h1>
+                            <p className="text-xl text-gray-300">Jurerê</p>
+                            <button
+                                onClick={() => setScreen('menu')}
+                                className="mt-8 bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg text-xl font-bold transition-all transform hover:scale-105"
+                            >
+                                INICIAR AVENTURA
+                            </button>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        {discovered ? (
-                          <span className="text-green-400 text-xs">✓ Coletado</span>
-                        ) : distance ? (
-                          <>
-                            <p className="text-sm font-bold">{Math.round(distance)}m</p>
-                            {distance <= 15 && (
-                              <p className="text-yellow-400 text-xs">Próximo!</p>
-                            )}
-                          </>
-                        ) : null}
-                      </div>
                     </div>
-                  </div>
                 );
-              })}
-            </div>
-          </div>
+            }
 
-          <p className="text-center text-gray-400 text-sm">
-            Aproxime-se a 15 metros dos locais para descobri-los
-          </p>
-        </div>
-      </div>
-    );
-  }
+            if (screen === 'menu') {
+                return (
+                    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white p-6">
+                        <div className="max-w-md mx-auto">
+                            <h1 className="text-3xl font-bold text-center mb-8 text-green-400">Menu Principal</h1>
+                            
+                            <div className="bg-gray-800 rounded-lg p-4 mb-6">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-gray-400">Pontos</p>
+                                        <p className="text-3xl font-bold">{points}/100</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-gray-400">Ranking</p>
+                                        <p className={`text-2xl font-bold ${rank.color}`}>{rank.icon} {rank.name}</p>
+                                    </div>
+                                </div>
+                                <div className="w-full bg-gray-700 rounded-full h-3 mt-4">
+                                    <div 
+                                        className="bg-green-500 h-3 rounded-full transition-all"
+                                        style={{ width: `${points}%` }}
+                                    />
+                                </div>
+                            </div>
 
-  // Descoberta
-  if (screen === 'discovery') {
-    const creature = currentLocation.creature;
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white p-6 flex items-center justify-center">
-        <div className="max-w-md mx-auto text-center">
-          <div className="mb-6">
-            <div className="text-9xl mb-4 animate-bounce">{creature.icon}</div>
-            <h2 className="text-3xl font-bold mb-2">Você encontrou!</h2>
-            <h3 className="text-2xl text-green-400 mb-4">{creature.name}</h3>
-            <p className={`text-lg mb-2 ${
-              creature.type === 'legendary' ? 'text-purple-400' :
-              creature.type === 'epic' ? 'text-yellow-400' :
-              creature.type === 'rare' ? 'text-blue-400' :
-              'text-gray-400'
-            }`}>
-              {creature.rarity}
-            </p>
-            <p className="text-3xl font-bold text-green-400">+{creature.points} pontos</p>
-          </div>
+                            <div className="space-y-4">
+                                <button
+                                    onClick={() => setScreen('mode')}
+                                    className="w-full bg-green-600 hover:bg-green-700 p-4 rounded-lg flex items-center justify-between transition-all"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <Play className="w-6 h-6" />
+                                        <span className="text-xl font-bold">JOGAR</span>
+                                    </div>
+                                    <ChevronRight className="w-6 h-6" />
+                                </button>
 
-          <button
-            onClick={collectItem}
-            className="w-full bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg text-xl font-bold transition-all transform hover:scale-105"
-          >
-            COLETAR
-          </button>
-        </div>
-      </div>
-    );
-  }
+                                <button
+                                    onClick={() => setScreen('inventory')}
+                                    className="w-full bg-gray-700 hover:bg-gray-600 p-4 rounded-lg flex items-center justify-between transition-all"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <Backpack className="w-6 h-6" />
+                                        <span className="text-xl font-bold">Inventário</span>
+                                    </div>
+                                    <span className="text-gray-400">{inventory.length} itens</span>
+                                </button>
 
-  // Batalha
-  if (screen === 'battle' && enemy) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-red-900 to-black text-white p-6">
-        <div className="max-w-md mx-auto">
-          <h2 className="text-2xl font-bold text-center mb-6 text-red-400">BATALHA!</h2>
+                                <button
+                                    onClick={() => setScreen('missions')}
+                                    className="w-full bg-gray-700 hover:bg-gray-600 p-4 rounded-lg flex items-center justify-between transition-all"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <Target className="w-6 h-6" />
+                                        <span className="text-xl font-bold">Missões</span>
+                                    </div>
+                                    <span className="text-gray-400">{missions.filter(m => m.completed).length}/{missions.length}</span>
+                                </button>
+                            </div>
 
-          <div className="bg-gray-800 rounded-lg p-6 mb-6 text-center">
-            <div className="text-8xl mb-4">{enemy.icon}</div>
-            <h3 className="text-2xl font-bold mb-2">{enemy.name}</h3>
-            <p className={`text-sm ${
-              enemy.type === 'legendary' ? 'text-purple-400' :
-              enemy.type === 'epic' ? 'text-yellow-400' :
-              'text-red-400'
-            }`}>
-              {enemy.rarity}
-            </p>
-            <div className="mt-4">
-              <div className="flex items-center justify-between mb-2">
-                <span>Vida do Inimigo</span>
-                <span>{enemy.currentHealth}/{enemy.health}</span>
-              </div>
-              <div className="w-full bg-gray-700 rounded-full h-4">
-                <div 
-                  className="bg-red-500 h-4 rounded-full transition-all"
-                  style={{ width: `${(enemy.currentHealth / enemy.health) * 100}%` }}
-                />
-              </div>
-            </div>
-          </div>
+                            {points >= 100 && (
+                                <div className="mt-8 bg-gradient-to-r from-purple-600 to-pink-600 p-6 rounded-lg text-center">
+                                    <Award className="w-16 h-16 mx-auto mb-4" />
+                                    <h2 className="text-2xl font-bold mb-2">PARABÉNS!</h2>
+                                    <p className="text-lg">Você completou as 99 Noites!</p>
+                                    <p className="text-sm mt-2">🏆 Mestre da Floresta 🏆</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                );
+            }
 
-          <div className="bg-gray-800 rounded-lg p-4 mb-6">
-            <div className="flex items-center justify-between mb-2">
-              <span>Sua Vida</span>
-              <span>{playerHealth}/100</span>
-            </div>
-            <div className="w-full bg-gray-700 rounded-full h-4">
-              <div 
-                className="bg-green-500 h-4 rounded-full transition-all"
-                style={{ width: `${playerHealth}%` }}
-              />
-            </div>
-          </div>
+            if (screen === 'mode') {
+                return (
+                    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white p-6">
+                        <div className="max-w-md mx-auto">
+                            <button onClick={() => setScreen('menu')} className="mb-6 text-gray-400 hover:text-white">
+                                ← Voltar
+                            </button>
+                            
+                            <h1 className="text-3xl font-bold text-center mb-8 text-green-400">Escolha o Modo</h1>
 
-          <div className="space-y-4">
-            <button
-              onClick={attack}
-              className="w-full bg-red-600 hover:bg-red-700 p-4 rounded-lg flex items-center justify-center gap-3 text-xl font-bold transition-all"
-            >
-              <Sword className="w-6 h-6" />
-              ATACAR
-            </button>
+                            <div className="space-y-4">
+                                <button
+                                    onClick={generateLocalPoints}
+                                    className="w-full bg-blue-600 hover:bg-blue-700 p-6 rounded-lg text-left transition-all"
+                                >
+                                    <div className="flex items-center gap-4 mb-2">
+                                        <MapPin className="w-8 h-8" />
+                                        <div>
+                                            <h3 className="text-xl font-bold">🎯 Modo Local</h3>
+                                            <p className="text-sm text-gray-300">Gera 10 pontos perto de você</p>
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-gray-400 mt-2">Perfeito para jogar em uma praça ou praia</p>
+                                </button>
 
-            <button
-              onClick={flee}
-              className="w-full bg-gray-600 hover:bg-gray-700 p-4 rounded-lg flex items-center justify-center gap-3 text-xl font-bold transition-all"
-            >
-              <Shield className="w-6 h-6" />
-              FUGIR
-            </button>
-          </div>
+                                <button
+                                    onClick={startJurereMode}
+                                    className="w-full bg-purple-600 hover:bg-purple-700 p-6 rounded-lg text-left transition-all"
+                                >
+                                    <div className="flex items-center gap-4 mb-2">
+                                        <Trophy className="w-8 h-8" />
+                                        <div>
+                                            <h3 className="text-xl font-bold">🌆 Modo Jurerê</h3>
+                                            <p className="text-sm text-gray-300">Aventura completa pela região</p>
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-gray-400 mt-2">10+ pontos fixos em Jurerê Internacional</p>
+                                </button>
 
-          <div className="mt-6 text-center text-sm text-gray-400">
-            <p>💡 Dica: Cada ataque causa 20 de dano</p>
-            <p>⚠️ O inimigo contra-ataca causando {enemy.damage} de dano</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+                                <button
+                                    onClick={() => alert('Modo Criador em breve!')}
+                                    className="w-full bg-gray-700 hover:bg-gray-600 p-6 rounded-lg text-left transition-all"
+                                >
+                                    <div className="flex items-center gap-4 mb-2">
+                                        <Plus className="w-8 h-8" />
+                                        <div>
+                                            <h3 className="text-xl font-bold">✏️ Modo Criador</h3>
+                                            <p className="text-sm text-gray-300">Adicione seus próprios pontos</p>
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-gray-400 mt-2">Em desenvolvimento</p>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
 
-  // Inventário
-  if (screen === 'inventory') {
-    const groupedInventory = inventory.reduce((acc, item) => {
-      const existing = acc.find(i => i.id === item.id);
-      if (existing) {
-        existing.count++;
-      } else {
-        acc.push({ ...item, count: 1 });
-      }
-      return acc;
-    }, []);
+            if (screen === 'map') {
+                return (
+                    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white p-4">
+                        <div className="max-w-md mx-auto">
+                            <div className="flex items-center justify-between mb-4">
+                                <button onClick={() => setScreen('menu')} className="text-gray-400 hover:text-white">
+                                    ← Menu
+                                </button>
+                                <div className="text-right">
+                                    <p className="text-sm text-gray-400">Pontos</p>
+                                    <p className="text-2xl font-bold text-green-400">{points}/100</p>
+                                </div>
+                            </div>
 
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white p-6">
-        <div className="max-w-md mx-auto">
-          <div className="flex items-center justify-between mb-6">
-            <button onClick={() => setScreen('menu')} className="text-gray-400 hover:text-white">
-              ← Voltar
-            </button>
-            <h1 className="text-2xl font-bold">Inventário</h1>
-            <div className="w-16"></div>
-          </div>
+                            <div className="bg-gray-800 rounded-lg p-4 mb-4">
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2">
+                                        <Heart className="w-5 h-5 text-red-500" />
+                                        <span>Vida: {playerHealth}/100</span>
+                                    </div>
+                                    <div className={`${rank.color} font-bold`}>
+                                        {rank.icon} {rank.name}
+                                    </div>
+                                </div>
+                                <div className="w-full bg-gray-700 rounded-full h-2">
+                                    <div 
+                                        className="bg-green-500 h-2 rounded-full transition-all"
+                                        style={{ width: `${points}%` }}
+                                    />
+                                </div>
+                            </div>
 
-          <div className="bg-gray-800 rounded-lg p-4 mb-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400">Total de Pontos</p>
-                <p className="text-3xl font-bold text-green-400">{points}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-gray-400">Itens Coletados</p>
-                <p className="text-3xl font-bold">{inventory.length}</p>
-              </div>
-            </div>
-          </div>
+                            <div className="bg-gray-800 rounded-lg p-4 mb-4">
+                                <h3 className="font-bold mb-2 flex items-center gap-2">
+                                    <MapPin className="w-5 h-5" />
+                                    Locais Próximos
+                                </h3>
+                                {!userPosition && (
+                                    <p className="text-yellow-400 text-sm">📍 Aguardando GPS...</p>
+                                )}
+                                {userPosition && locations.length === 0 && (
+                                    <p className="text-gray-400 text-sm">Nenhum local gerado ainda</p>
+                                )}
+                                <div className="space-y-2 mt-3 max-h-96 overflow-y-auto">
+                                    {locations.map(loc => {
+                                        const distance = userPosition ? calculateDistance(
+                                            userPosition.lat, userPosition.lng,
+                                            loc.lat, loc.lng
+                                        ) : null;
+                                        const creature = creatures.find(c => c.id === loc.creature);
+                                        const discovered = discoveredLocations.includes(loc.id);
+                                        
+                                        return (
+                                            <div 
+                                                key={loc.id}
+                                                className={`p-3 rounded-lg ${discovered ? 'bg-green-900' : distance && distance <= 15 ? 'bg-yellow-900' : 'bg-gray-700'}`}
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-3xl">{creature.icon}</span>
+                                                        <div>
+                                                            <p className="font-bold">{loc.name}</p>
+                                                            <p className="text-xs text-gray-400">{creature.name}</p>
+                                                            <p className={`text-xs ${
+                                                                creature.type === 'legendary' ? 'text-purple-400' :
+                                                                creature.type === 'epic' ? 'text-yellow-400' :
+                                                                creature.type === 'rare' ? 'text-blue-400' :
+                                                                'text-gray-400'
+                                                            }`}>
+                                                                {creature.rarity} • {creature.points} pts
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        {discovered ? (
+                                                            <span className="text-green-400 text-xs">✓ Coletado</span>
+                                                        ) : distance ? (
+                                                            <>
+                                                                <p className="text-sm font-bold">{Math.round(distance)}m</p>
+                                                                {distance <= 15 && (
+                                                                    <p className="text-yellow-400 text-xs">Próximo!</p>
+                                                                )}
+                                                            </>
+                                                        ) : null}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
 
-          {groupedInventory.length === 0 ? (
-            <div className="text-center py-12 text-gray-400">
-              <Backpack className="w-16 h-16 mx-auto mb-4 opacity-50" />
-              <p>Seu inventário está vazio</p>
-              <p className="text-sm mt-2">Explore o mapa para coletar itens!</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-4">
-              {groupedInventory.map((item, index) => (
-                <div 
-                  key={index}
-                  className={`rounded-lg p-4 text-center ${
-                    item.type === 'legendary' ? 'bg-gradient-to-br from-purple-600 to-pink-600' :
-                    item.type === 'epic' ? 'bg-gradient-to-br from-yellow-600 to-orange-600' :
-                    item.type === 'rare' ? 'bg-gradient-to-br from-blue-600 to-cyan-600' :
-                    'bg-gray-700'
-                  }`}
-                >
-                  <div className="text-5xl mb-2">{item.icon}</div>
-                  <p className="font-bold text-sm mb-1">{item.name}</p>
-                  <p className="text-xs text-gray-200">{item.rarity}</p>
-                  <p className="text-lg font-bold mt-2">x{item.count}</p>
-                  <p className="text-xs text-gray-200">{item.points} pts cada</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
+                            <p className="text-center text-gray-400 text-sm">
+                                Aproxime-se a 15 metros dos locais para descobri-los
+                            </p>
+                        </div>
+                    </div>
+                );
+            }
 
-  // Missões
-  if (screen === 'missions') {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white p-6">
-        <div className="max-w-md mx-auto">
-          <div className="flex items-center justify-between mb-6">
-            <button onClick={() => setScreen('menu')} className="text-gray-400 hover:text-white">
-              ← Voltar
-            </button>
-            <h1 className="text-2xl font-bold">Missões</h1>
-            <div className="w-16"></div>
-          </div>
+            if (screen === 'discovery') {
+                const creature = currentLocation.creature;
+                return (
+                    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white p-6 flex items-center justify-center">
+                        <div className="max-w-md mx-auto text-center">
+                            <div className="mb-6">
+                                <div className="text-9xl mb-4">{creature.icon}</div>
+                                <h2 className="text-3xl font-bold mb-2">Você encontrou!</h2>
+                                <h3 className="text-2xl text-green-400 mb-4">{creature.name}</h3>
+                                <p className={`text-lg mb-2 ${
+                                    creature.type === 'legendary' ? 'text-purple-400' :
+                                    creature.type === 'epic' ? 'text-yellow-400' :
+                                    creature.type === 'rare' ? 'text-blue-400' :
+                                    'text-gray-400'
+                                }`}>
+                                    {creature.rarity}
+                                </p>
+                                <p className="text-3xl font-bold text-green-400">+{creature.points} pontos</p>
+                            </div>
 
-          <div className="space-y-4">
-            {missions.map(mission => (
-              <div 
-                key={mission.id}
-                className={`rounded-lg p-4 ${mission.completed ? 'bg-green-900' : 'bg-gray-800'}`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-bold flex items-center gap-2">
-                    {mission.completed ? '✓' : '○'} {mission.name}
-                  </h3>
-                  <span className="text-yellow-400 font-bold">+{mission.reward} pts</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 bg-gray-700 rounded-full h-3">
-                    <div 
-                      className={`h-3 rounded-full transition-all ${mission.completed ? 'bg-green-500' : 'bg-blue-500'}`}
-                      style={{ width: `${(mission.progress / mission.target) * 100}%` }}
-                    />
-                  </div>
-                  <span className="text-sm">{mission.progress}/{mission.target}</span>
-                </div>
-                {mission.completed && (
-                  <p className="text-green-400 text-sm mt-2">✓ Missão Completa!</p>
-                )}
-              </div>
-            ))}
-          </div>
+                            <button
+                                onClick={collectItem}
+                                className="w-full bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg text-xl font-bold transition-all transform hover:scale-105"
+                            >
+                                COLETAR
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
 
-          <div className="mt-8 bg-gray-800 rounded-lg p-4 text-center">
-            <p className="text-gray-400 text-sm">
-              Complete missões para ganhar pontos extras!
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+            if (screen === 'battle' && enemy) {
+                return (
+                    <div className="min-h-screen bg-gradient-to-b from-red-900 to-black text-white p-6">
+                        <div className="max-w-md mx-auto">
+                            <h2 className="text-2xl font-bold text-center mb-6 text-red-400">BATALHA!</h2>
 
-  return null;
-};
+                            <div className="bg-gray-800 rounded-lg p-6 mb-6 text-center">
+                                <div className="text-8xl mb-4">{enemy.icon}</div>
+                                <h3 className="text-2xl font-bold mb-2">{enemy.name}</h3>
+                                <p className={`text-sm ${
+                                    enemy.type === 'legendary' ? 'text-purple-400' :
+                                    enemy.type === 'epic' ? 'text-yellow-400' :
+                                    'text-red-400'
+                                }`}>
+                                    {enemy.rarity}
+                                </p>
+                                <div className="mt-4">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span>Vida do Inimigo</span>
+                                        <span>{enemy.currentHealth}/{enemy.health}</span>
+                                    </div>
+                                    <div className="w-full bg-gray-700 rounded-full h-4">
+                                        <div 
+                                            className="bg-red-500 h-4 rounded-full transition-all"
+                                            style={{ width: `${(enemy.currentHealth / enemy.health) * 100}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
 
-export default App;
+                            <div className="bg-gray-800 rounded-lg p-4 mb-6">
+                                <div className="flex items-center justify-between mb-2">
+                                    <span>Sua Vida</span>
+                                    <span>{playerHealth}/100</span>
+                                </div>
+                                <div className="w-full bg-gray-700 rounded-full h-4">
+                                    <div 
+                                        className="bg-green-500 h-4 rounded-full transition-all"
+                                        style={{ width: `${playerHealth}%` }}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <button
+                                    onClick={attack}
+                                    className="w-full bg-red-600 hover:bg-red-700 p-4 rounded-lg flex items-center justify-center gap-3 text-xl font-bold transition-all"
+                                >
+                                    <Sword className="w-6 h-6" />
+                                    ATACAR
+                                </button>
+
+                                <button
+                                    onClick={flee}
+                                    className="w-full bg-gray-600 hover:bg-gray-700 p-4 rounded-lg flex items-center justify-center gap-3 text-xl font-bold transition-all"
+                                >
+                                    <Shield className="w-6 h-6" />
+                                    FUGIR
+                                </button>
+                            </div>
+
+                            <div className="mt-6 text-center text-sm text-gray-400">
+                                <p>💡 Dica: Cada ataque causa 20 de dano</p>
+                                <p>⚠️ O inimigo contra-ataca causando {enemy.damage} de dano</p>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (screen === 'inventory') {
+                const groupedInventory = inventory.reduce((acc, item) => {
+                    const existing = acc.find(i => i.id === item.id);
+                    if (existing) {
+                        existing.count++;
+                    } else {
+                        acc.push({ ...item, count: 1 });
+                    }
+                    return acc;
+                }, []);
+
+                return (
+                    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white p-6">
+                        <div className="max-w-md mx-auto">
+                            <div className="flex items-center justify-between mb-6">
+                                <button onClick={() => setScreen('menu')} className="text-gray-400 hover:text-white">
+                                    ← Voltar
+                                </button>
+                                <h1 className="text-2xl font-bold">Inventário</h1>
+                                <div className="w-16"></div>
+                            </div>
+
+                            <div className="bg-gray-800 rounded-lg p-4 mb-6">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-gray-400">Total de Pontos</p>
+                                        <p className="text-3xl font-bold text-green-400">{points}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-gray-400">Itens Coletados</p>
+                                        <p className="text-3xl font-bold">{inventory.length}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {groupedInventory.length === 0 ? (
+                                <div className="text-center py-12 text-gray-400">
+                                    <Backpack className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                                    <p>Seu inventário está vazio</p>
+                                    <p className="text-sm mt-2">Explore o mapa para coletar itens!</p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-2 gap-4">
+                                    {groupedInventory.map((item, index) => (
+                                        <div 
+                                            key={index}
+                                            className={`rounded-lg p-4 text-center ${
+                                                item.type === 'legendary' ? 'bg-gradient-to-br from-purple-600 to-pink-600' :
+                                                item.type === 'epic' ? 'bg-gradient-to-br from-yellow-600 to-orange-600' :
+                                                item.type === 'rare' ? 'bg-gradient-to-br from-blue-600 to-cyan-600' :
+                                                'bg-gray-700'
+                                            }`}
+                                        >
+                                            <div className="text-5xl mb-2">{item.icon}</div>
+                                            <p className="font-bold text-sm mb-1">{item.name}</p>
+                                            <p className="text-xs text-gray-200">{item.rarity}</p>
+                                            <p className="text-lg font-bold mt-2">x{item.count}</p>
+                                            <p className="text-xs text-gray-200">{item.points} pts cada</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                );
+            }
+
+            if (screen === 'missions') {
+                return (
+                    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white p-6">
+                        <div className="max-w-md mx-auto">
+                            <div className="flex items-center justify-between mb-6">
+                                <button onClick={() => setScreen('menu')} className="text-gray-400 hover:text-white">
+                                    ← Voltar
+                                </button>
+                                <h1 className="text-2xl font-bold">Missões</h1>
+                                <div className="w-16"></div>
+                            </div>
+
+                            <div className="space-y-4">
+                                {missions.map(mission => (
+                                    <div 
+                                        key={mission.id}
+                                        className={`rounded-lg p-4 ${mission.completed ? 'bg-green-900' : 'bg-gray-800'}`}
+                                    >
+                                        <div className="flex items-center justify-between mb-2">
+                                            <h3 className="font-bold flex items-center gap-2">
+                                                {mission.completed ? '✓' : '○'} {mission.name}
+                                            </h3>
+                                            <span className="text-yellow-400 font-bold">+{mission.reward} pts</span>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex-1 bg-gray-700 rounded-full h-3">
+                                                <div 
+                                                    className={`h-3 rounded-full transition-all ${mission.completed ? 'bg-green-500' : 'bg-blue-500'}`}
+                                                    style={{ width: `${(mission.progress / mission.target) * 100}%` }}
+                                                />
+                                            </div>
+                                            <span className="text-sm">{mission.progress}/{mission.target}</span>
+                                        </div>
+                                        {mission.completed && (
+                                            <p className="text-green-400 text-sm mt-2">✓ Missão Completa!</p>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="mt-8 bg-gray-800 rounded-lg p-4 text-center">
+                                <p className="text-gray-400 text-sm">
+                                    Complete missões para ganhar pontos extras!
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return null;
+        };
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
